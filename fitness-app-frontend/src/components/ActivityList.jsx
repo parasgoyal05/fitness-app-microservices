@@ -1,40 +1,60 @@
-import { Card, CardContent, Grid2, Typography } from '@mui/material'
-import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router';
-import { getActivities } from '../services/api';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
+import { getActivities } from "../services/api";
 
-const ActivityList = () => {
+const TYPE_EMOJI = {
+  RUNNING: "🏃",
+  WALKING: "🚶",
+  CYCLING: "🚴",
+  SWIMMING: "🏊",
+  WEIGHT_TRAINING: "🏋️",
+  YOGA: "🧘",
+  HIIT: "⚡",
+  CARDIO: "🤸",
+  STRETCHING: "🤾",
+  OTHER: "🏅",
+};
+
+export default function ActivityList() {
   const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const fetchActivities = async () => {
-    try {
-      const response = await getActivities();
-      setActivities(response.data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   useEffect(() => {
-    fetchActivities();
+    getActivities()
+      .then((res) => setActivities(res.data))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
-  return (
-    <Grid2 container spacing={2}>
-      {activities.map((activity) => (
-        <Grid2 container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }}>
-            <Card sx={{cursor: 'pointer'}}
-            onClick= {() => navigate(`/activities/${activity.id}`)}>
-                <CardContent>
-                  <Typography variant='h6'>{activity.type}</Typography>
-                  <Typography>Duration: {activity.duration}</Typography>
-                  <Typography>Calories: {activity.caloriesBurned}</Typography>
-                </CardContent>
-            </Card>
-        </Grid2>
-      ))}
-  </Grid2>
-  )
-}
 
-export default ActivityList
+  if (loading) return <p className="status-text">Loading activities...</p>;
+  if (activities.length === 0)
+    return <p className="status-text">No activities yet. Log your first workout above!</p>;
+
+  return (
+    <div>
+      <h2 className="section-title">Your Activities</h2>
+      <div className="activity-grid">
+        {activities.map((a) => (
+          <div
+            key={a.id}
+            className="activity-card"
+            onClick={() => navigate(`/activities/${a.id}`)}
+          >
+            <div className="activity-emoji">{TYPE_EMOJI[a.type] || "🏅"}</div>
+            <div className="activity-info">
+              <div className="activity-type">{a.type.replace("_", " ")}</div>
+              <div className="activity-meta">
+                {a.duration} min &nbsp;·&nbsp; {a.caloriesBurned} kcal
+              </div>
+              <div className="activity-date">
+                {new Date(a.createdAt).toLocaleDateString()}
+              </div>
+            </div>
+            <div className="activity-arrow">›</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

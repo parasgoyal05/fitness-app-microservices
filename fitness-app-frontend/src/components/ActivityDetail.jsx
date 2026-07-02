@@ -1,74 +1,88 @@
-import React, { useEffect, useState } from 'react'
-import { useParams } from 'react-router'
-import { getActivityDetail } from '../services/api';
-import { Box, Card, CardContent, Divider, Typography } from '@mui/material';
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router";
+import { getActivityDetail } from "../services/api";
 
-const ActivityDetail = () => {
+export default function ActivityDetail() {
   const { id } = useParams();
-  const [activity, setActivity] = useState(null);
-  const [recommendation, setRecommendation] = useState(null);
+  const navigate = useNavigate();
+
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchActivityDetail = async () => {
-      try {
-        const response = await getActivityDetail(id);
-        setActivity(response.data);
-        setRecommendation(response.data.recommendation);
-      } catch (error) {
-        console.error(error);
-      }
-    }
-
-    fetchActivityDetail();
+    getActivityDetail(id)
+      .then((res) => setData(res.data))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, [id]);
 
-  if (!activity) {
-    return <Typography>Loading...</Typography>
-  }
+  if (loading) return <p className="status-text">Loading...</p>;
+
+  if (!data) return <p className="status-text">Recommendation not found.</p>;
+
   return (
-    <Box sx={{ maxWidth: 800, mx: 'auto', p: 2 }}>
-            <Card sx={{ mb: 2 }}>
-                <CardContent>
-                    <Typography variant="h5" gutterBottom>Activity Details</Typography>
-                    <Typography>Type: {activity.type}</Typography>
-                    <Typography>Duration: {activity.duration} minutes</Typography>
-                    <Typography>Calories Burned: {activity.caloriesBurned}</Typography>
-                    <Typography>Date: {new Date(activity.createdAt).toLocaleString()}</Typography>
-                </CardContent>
-            </Card>
+    <div className="detail-page">
+      <button className="btn-back" onClick={() => navigate("/activities")}>
+        ← Back
+      </button>
 
-            {recommendation && (
-                <Card>
-                    <CardContent>
-                        <Typography variant="h5" gutterBottom>AI Recommendation</Typography>
-                        <Typography variant="h6">Analysis</Typography>
-                        <Typography paragraph>{activity.recommendation}</Typography>
-                        
-                        <Divider sx={{ my: 2 }} />
-                        
-                        <Typography variant="h6">Improvements</Typography>
-                        {activity?.improvements?.map((improvement, index) => (
-                            <Typography key={index} paragraph>• {activity.improvements}</Typography>
-                        ))}
-                        
-                        <Divider sx={{ my: 2 }} />
-                        
-                        <Typography variant="h6">Suggestions</Typography>
-                        {activity?.suggestions?.map((suggestion, index) => (
-                            <Typography key={index} paragraph>• {suggestion}</Typography>
-                        ))}
-                        
-                        <Divider sx={{ my: 2 }} />
-                        
-                        <Typography variant="h6">Safety Guidelines</Typography>
-                        {activity?.safety?.map((safety, index) => (
-                            <Typography key={index} paragraph>• {safety}</Typography>
-                        ))}
-                    </CardContent>
-                </Card>
-            )}
-        </Box>
-  )
+      {/* Activity Summary */}
+      <div className="card">
+        <h2 className="section-title">Activity Details</h2>
+
+        <div className="detail-chips">
+          <span className="chip chip-blue">
+            {data.activityType?.replace("_", " ")}
+          </span>
+        </div>
+
+        <p className="detail-date">
+          {new Date(data.createdAt).toLocaleString()}
+        </p>
+      </div>
+
+      {/* Recommendation */}
+      <div className="card rec-card">
+        <h2 className="section-title">🤖 AI Recommendation</h2>
+
+        <div className="rec-section">
+          <h3 className="rec-heading">Analysis</h3>
+          <p className="rec-text">{data.recommendation}</p>
+        </div>
+
+        {data.improvements?.length > 0 && (
+          <div className="rec-section">
+            <h3 className="rec-heading">💡 Improvements</h3>
+            <ul className="rec-list">
+              {data.improvements.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {data.suggestions?.length > 0 && (
+          <div className="rec-section">
+            <h3 className="rec-heading">📋 Suggestions</h3>
+            <ul className="rec-list">
+              {data.suggestions.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {data.safety?.length > 0 && (
+          <div className="rec-section">
+            <h3 className="rec-heading">🛡️ Safety Guidelines</h3>
+            <ul className="rec-list">
+              {data.safety.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
-
-export default ActivityDetail
